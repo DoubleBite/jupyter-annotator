@@ -18,7 +18,7 @@ problems = [{
 annotator = Annotator(problems)
 annotator.start()
 ```
-![](https://i.imgur.com/3swMqsa.png)
+![](https://i.imgur.com/XyTxx9f.png)
 
 
 ```python
@@ -35,7 +35,7 @@ custom_fields = [("equation", list, 30)] # (field_name, type, max_length)
 annotator = Annotator(problems, custom_fields=custom_fields)
 annotator.start()
 ```
-![](https://i.imgur.com/igr9hRg.png)
+![](https://i.imgur.com/INTb2aD.png)
 
 
 
