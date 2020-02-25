@@ -31,7 +31,7 @@ problems = [{
     "answer": "c"
 }]
 
-custom_fields = [("equation", list, 30)] # (field_name, type, max_length)
+custom_fields = [("reason", str, 100)] # (field_name, type, max_length)
 annotator = Annotator(problems, custom_fields=custom_fields)
 annotator.start()
 ```
