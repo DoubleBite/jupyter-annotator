@@ -1,11 +1,10 @@
 """
-dashboard_layout
-form_layout
-preview_layout
-
-button_layout
-依照字數給定layout large medium small
-依照 type 不過之後再做
+Code logic:
+    The annotator first reads in the field names in the problem and stores them in a list to preseve the order of occurrence.
+    Then, for each field, the annotator finds its max value length (for layout arrangement) and its type (list, str, dict...). 
+    Lastly, it creates a dashboard, which consists of form widgets for each field (right) and a output preview area (left).
+    Custom fields can also be inputted when instantiating an annotator using the following format: [(field_name1, type1, max_length1), (field_name2, type2, max_length2)].   
+    E.g. [("aaa", list, 15), ("bbb", dict, 180)] 
 """
 
 import json
@@ -17,78 +16,84 @@ from .utility import string_to_list, list_to_string, most_common
 
 class Annotator:
     """
-    1. Initialize
     """
-    def __init__(self, problems, custom_fields=None):
+    def __init__(self, json_problems, custom_fields=None):
         
-        self.problems = problems
+        self.problems = json_problems
         self.current_index = 0
-        self.fileds = []
-        self.fields = self._get_field_list()
-        self.field_to_length, self.field_to_type = self._get_field_info()
-        self._handle_custom_fields(custom_fields)
+        self.fields = []
+        self.field_to_length = {}
+        self.field_to_type = {}
+        
+        # Preprocess
+        self._get_field_names()
+        self._get_field_info()
+        if custom_fields:
+            self._handle_custom_fields(custom_fields)    
     
-    def _get_field_list(self):
-        """Get the field names in the data
+    
+    def _get_field_names(self):
+        """Read the field names from the input problems 
+        
+        Example (one problem): 
+            problem = {'a': 123, 'b':345, 'c':789} --> field_names = ['a', 'b', 'c]'
         """
-        all_fields = list()
         for problem in self.problems:
             fields = problem.keys()
-            new_fields = [field for field in fields if field not in all_fields]
-            all_fields = all_fields + new_fields
-        return all_fields
+            new_fields = [field for field in fields if field not in self.fields]
+            self.fields = self.fields + new_fields
+    
     
     def _get_field_info(self):
+        """Collect the max length of the text of each field for layout preparation, and collect the type of each field
         """
-        """
-        field_to_length = {}
-        field_to_type = {}
         for field in self.fields:
-            field_to_length[field] = max([len(str(prob[field])) for prob in self.problems if field in prob])
-        for field in self.fields:
-            field_to_type[field] = most_common([type(prob[field]) for prob in self.problems if field in prob])
-        return field_to_length, field_to_type
+            self.field_to_length[field] = max([len(str(prob[field])) for prob in self.problems if field in prob])
+            self.field_to_type[field] = most_common([type(prob[field]) for prob in self.problems if field in prob])
     
     
     def _handle_custom_fields(self, custom_fields):
-        for field, field_type, field_size in custom_fields:
+        """If there exist custom fields, collect their  information
+        """
+        for field, field_type, field_length in custom_fields:
             if field not in self.fields:
                 self.fields.append(field)
                 self.field_to_type[field] = field_type
-                self.field_to_length[field] = field_size
+                self.field_to_length[field] = field_length
 
         
     def start(self):
+        """Initialize the annotation environment and load the values from the current problem (the first problem)
+        """
         self.initialize_dashboard()
-        self.render_value()
-    
+        self.load_problem_info()
+
     
     def initialize_dashboard(self):
+        """Initialize the annotation environment
+        """
+        height = 0
   
-        # Layouts
+        # Form widgets
         layout_lg = widgets.Layout(flex='0 1 150px', height='100%', width='90%')
         layout_md = widgets.Layout(flex='0 1 50px', height='100%', width='90%')
         layout_sm = widgets.Layout(flex='0 1 20px', width='90%')        
- 
-        # Fields
-        height = 0
+        
         self.form_widgets = OrderedDict()
         for field in self.fields:
             if self.field_to_length[field] <= 20:
                 layout = layout_sm
                 height += 20
-                self.form_widgets[field] = widgets.Text(description=f'{field.capitalize()}: ', layout=layout)
             elif self.field_to_length[field] <= 100:
                 layout = layout_md
                 height += 50
-                self.form_widgets[field] = widgets.Textarea(description=f'{field.capitalize()}: ', layout=layout)
             else:
                 layout = layout_lg
                 height += 150
-                self.form_widgets[field] = widgets.Textarea(description=f'{field.capitalize()}: ', layout=layout)
+            self.form_widgets[field] = widgets.Textarea(description=f'{field.capitalize()}: ', layout=layout)
         
         # Buttons
-        # Take reference from 
+        # The idea of these buttons takes reference from https://github.com/ideonate/jupyter-innotater
         prevbtn = widgets.Button(description='< Previous')
         nextbtn = widgets.Button(description='Next >')
         savebtn = widgets.Button(description='Save')
@@ -97,28 +102,23 @@ class Annotator:
         nextbtn.on_click(lambda _: self.change_index(1))
         savebtn.on_click(self.save)
         restorebtn.on_click(self.restore)
-        
         buttons_layout = widgets.Layout(width='80%', height='35px')
         height += 35
         buttons = widgets.HBox([prevbtn, nextbtn, savebtn, restorebtn], layout=buttons_layout)
-
+        
         # Dashboard
         form_layout = widgets.Layout(width='47%', justify_content ='space-around',  align_items='flex-end')
-        self.form = widgets.VBox([*self.form_widgets.values(), buttons], layout=form_layout)
-        
-        out = widgets.interactive_output(self.display_annotations, self.form_widgets)
         preview_layout = widgets.Layout(width='43%')
-        self.preview = widgets.VBox([out], layout=preview_layout)
-        
         dashboard_layout = widgets.Layout(height=f'{height+16*len(self.fields)}px')
-        self.dashboard = widgets.HBox([self.preview, self.form], layout=dashboard_layout)
-        display(self.dashboard)
+        form = widgets.VBox([*self.form_widgets.values(), buttons], layout=form_layout)
+        form_output = widgets.interactive_output(self.display_func, self.form_widgets)
+        preview = widgets.VBox([form_output], layout=preview_layout)
+        dashboard = widgets.HBox([preview, form], layout=dashboard_layout)
+        display(dashboard)
 
         
-    def display_annotations(self, **form_widgets):
-        """
-        This is the function that reads in the values of the widgets and outputs them in a customized format.
-        改成 field1, field2, field3
+    def display_func(self, **form_widgets):
+        """The display function for interactive_output widget
         """
         output = {}
         for field in self.fields:
@@ -132,8 +132,8 @@ class Annotator:
         print(json.dumps(output, indent=4))
 
         
-    def render_value(self):
-        """
+    def load_problem_info(self):
+        """Load the field values of the current problem
         """
         current_problem = self.problems[self.current_index]
         for field in self.fields:
@@ -147,14 +147,20 @@ class Annotator:
  
  
     def change_index(self, change):
+        """Jump to the previous or next problem
+        """
         if change < 0 < self.current_index:
             self.current_index -= 1
         elif change > 0 and self.current_index < len(self.problems) -1:
             self.current_index += 1
-        self.render_value()
+        
+        # Reload the problem info
+        self.load_problem_info()
             
             
     def save(self, change):
+        """Save the annotations back to the problem
+        """
         current_problem = self.problems[self.current_index]
         for field in self.fields:
             field_type = self.field_to_type[field]
@@ -165,5 +171,9 @@ class Annotator:
             else:
                 current_problem[field] = self.form_widgets[field].value
         
+        
     def restore(self, change):
-        self.render_value()
+        """Restore 
+        """
+        # Reload the problem info
+        self.load_problem_info()
