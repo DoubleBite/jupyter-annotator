@@ -1,0 +1,9 @@
+README.md
+setup.py
+jupyter_annotator/__init__.py
+jupyter_annotator/annotator.py
+jupyter_annotator/utility.py
+jupyter_annotator.egg-info/PKG-INFO
+jupyter_annotator.egg-info/SOURCES.txt
+jupyter_annotator.egg-info/dependency_links.txt
+jupyter_annotator.egg-info/top_level.txt

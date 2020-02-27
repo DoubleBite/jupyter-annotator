@@ -1,0 +1,59 @@
+Metadata-Version: 2.1
+Name: jupyter-annotator
+Version: 1.0.0
+Summary: This package provides an annotation UI for arbitrary dataset in json format.
+Home-page: https://github.com/DoubleBite/jupyter-annotator
+Author: Shih-hong Tsai
+Author-email: doublebeet@gmail.com
+License: UNKNOWN
+Description: # jupyter json annotator
+        
+        This package provides an annotation UI for arbitrary dataset in json format.
+        
+        
+        ## Usage
+        ```python
+        from jupyter_annotator import Annotator
+        
+        problems = [{
+            "problem": "Where would I not want a fox? (a problem from coommonsenseQA)",
+            "options": {
+                "a": "hen house", "b": "england", "c": "mountains", "d": "english hunt", "e": "california"
+            },
+            "answer": "a"
+        }]
+        
+        annotator = Annotator(problems)
+        annotator.start()
+        ```
+        ![](https://i.imgur.com/XyTxx9f.png)
+        
+        
+        ```python
+        # Adding custom fields
+        problems = [{
+            "problem": "What is the perimeter of a rectangular field whose diagonal is 5 m and width is 3 m ?",
+            "options": {
+                "a":"20 m", "b":"15 m", "c":"14 m", "d":"10 m", "e":"25 m"
+            },
+            "answer": "c"
+        }]
+        
+        custom_fields = [("rationale", str, 100)] # (field_name, type, max_length)
+        annotator = Annotator(problems, custom_fields=custom_fields)
+        annotator.start()
+        ```
+        ![](https://i.imgur.com/ZGulPVj.png)
+        
+        
+        
+        
+        ## References
+        + [Jupyter Widgets - Using Interact](https://ipywidgets.readthedocs.io/en/latest/examples/Using%20Interact.html)
+        + [jupyter-innotater](https://github.com/ideonate/jupyter-innotater)
+Platform: UNKNOWN
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.7
+Description-Content-Type: text/markdown
