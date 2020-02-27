@@ -4,6 +4,11 @@
 This package provides an annotation UI for arbitrary dataset in json format.
 
 
+## Install
+```
+pip install jupyter-annotator
+```
+
 
 ## Usage
 ```python
