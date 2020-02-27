@@ -31,11 +31,11 @@ problems = [{
     "answer": "c"
 }]
 
-custom_fields = [("reason", str, 100)] # (field_name, type, max_length)
+custom_fields = [("rationale", str, 100)] # (field_name, type, max_length)
 annotator = Annotator(problems, custom_fields=custom_fields)
 annotator.start()
 ```
-![](https://i.imgur.com/INTb2aD.png)
+![](https://i.imgur.com/ZGulPVj.png)
 
 
 
