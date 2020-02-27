@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: jupyter-annotator
-Version: 1.0.1
+Version: 1.0.2
 Summary: This package provides an annotation UI for arbitrary dataset in json format.
 Home-page: https://github.com/DoubleBite/jupyter-annotator
 Author: Shih-hong Tsai
@@ -9,11 +9,13 @@ License: UNKNOWN
 Description: # jupyter json annotator
         
         This package provides an annotation UI for arbitrary dataset in json format.
-        <<<<<<< HEAD
-        123asdddddddddddddddd
         
         
-        >>>>>>> 4f71749... test
+        ## Install
+        ```
+        pip install jupyter-annotator
+        ```
+        
         
         ## Usage
         ```python

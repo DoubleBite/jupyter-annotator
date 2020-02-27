@@ -1,11 +1,13 @@
 # jupyter json annotator
 
 This package provides an annotation UI for arbitrary dataset in json format.
-<<<<<<< HEAD
-123asdddddddddddddddd
 
 
->>>>>>> 4f71749... test
+## Install
+```
+pip install jupyter-annotator
+```
+
 
 ## Usage
 ```python
