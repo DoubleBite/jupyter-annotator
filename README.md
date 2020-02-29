@@ -12,8 +12,8 @@ pip install jupyter-annotator
 
 ## Usage
 ```python
+# Normal usage
 from jupyter_annotator import Annotator
-
 problems = [{
     "problem": "Where would I not want a fox? (a problem from coommonsenseQA)",
     "options": {
@@ -25,11 +25,11 @@ problems = [{
 annotator = Annotator(problems)
 annotator.start()
 ```
-![](https://i.imgur.com/XyTxx9f.png)
 
 
 ```python
 # Adding custom fields
+from jupyter_annotator import Annotator
 problems = [{
     "problem": "What is the perimeter of a rectangular field whose diagonal is 5 m and width is 3 m ?",
     "options": {
@@ -42,8 +42,32 @@ custom_fields = [("rationale", str, 100)] # (field_name, type, max_length)
 annotator = Annotator(problems, custom_fields=custom_fields)
 annotator.start()
 ```
+
+```python
+# Filter irrevelant fields
+from jupyter_annotator import Annotator
+problems = [{
+    "id": 1,
+    "problem": "Where would I not want a fox? (a problem from coommonsenseQA)",
+    "options": {
+        "a": "hen house", "b": "england", "c": "mountains", "d": "english hunt", "e": "california"
+    },
+    "answer": "a"
+}]
+
+filtered_fields = ['id'] 
+annotator = Annotator(problems, filtered_fields=filtered_fields)
+annotator.start()
+```
+
++ Normal Usage
+![](https://i.imgur.com/XyTxx9f.png)
+
++ Add custom fields
 ![](https://i.imgur.com/ZGulPVj.png)
 
++ Filter irrevelant fields
+![](https://i.imgur.com/7iCqbof.png)
 
 
 
