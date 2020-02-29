@@ -28,7 +28,7 @@ annotator.start()
 
 
 ```python
-# Adding custom fields
+# Add custom fields
 from jupyter_annotator import Annotator
 problems = [{
     "problem": "What is the perimeter of a rectangular field whose diagonal is 5 m and width is 3 m ?",
@@ -44,7 +44,7 @@ annotator.start()
 ```
 
 ```python
-# Filter irrevelant fields
+# Skip fields
 from jupyter_annotator import Annotator
 problems = [{
     "id": 1,
@@ -66,8 +66,8 @@ annotator.start()
 + Add custom fields
 ![](https://i.imgur.com/ZGulPVj.png)
 
-+ Filter irrevelant fields
-![](https://i.imgur.com/7iCqbof.png)
++ Skip fields
+![](https://i.imgur.com/6zT5lMR.png)
 
 
 
