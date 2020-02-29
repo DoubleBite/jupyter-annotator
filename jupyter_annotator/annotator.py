@@ -17,13 +17,14 @@ from .utility import string_to_list, list_to_string, most_common
 class Annotator:
     """
     """
-    def __init__(self, json_problems, custom_fields=None):
+    def __init__(self, json_problems, custom_fields=None, filtered_fields=None):
         
         self.problems = json_problems
         self.current_index = 0
         self.fields = []
         self.field_to_length = {}
         self.field_to_type = {}
+        self.filtered_fields = filtered_fields if filtered_fields else []
         
         # Preprocess
         self._get_field_names()
@@ -40,7 +41,7 @@ class Annotator:
         """
         for problem in self.problems:
             fields = problem.keys()
-            new_fields = [field for field in fields if field not in self.fields]
+            new_fields = [field for field in fields if field not in self.fields+self.filtered_fields ]
             self.fields = self.fields + new_fields
     
     
