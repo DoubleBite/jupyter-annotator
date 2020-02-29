@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="jupyter-annotator",
-    version="1.0.2",
+    version="1.1.2",
     author="Shih-hong Tsai",
     author_email="doublebeet@gmail.com",
     description="This package provides an annotation UI for arbitrary dataset in json format.",
