@@ -17,13 +17,14 @@ from .utility import string_to_list, list_to_string, most_common
 class Annotator:
     """
     """
-    def __init__(self, json_problems, custom_fields=None):
+    def __init__(self, json_problems, custom_fields=None, filtered_fields=None):
         
         self.problems = json_problems
         self.current_index = 0
         self.fields = []
         self.field_to_length = {}
         self.field_to_type = {}
+        self.filtered_fields = filtered_fields if filtered_fields else []
         
         # Preprocess
         self._get_field_names()
@@ -40,7 +41,7 @@ class Annotator:
         """
         for problem in self.problems:
             fields = problem.keys()
-            new_fields = [field for field in fields if field not in self.fields]
+            new_fields = [field for field in fields if field not in self.fields+self.filtered_fields ]
             self.fields = self.fields + new_fields
     
     
@@ -127,6 +128,10 @@ class Annotator:
                 output[field] = string_to_list(form_widgets[field])
             elif field_type == dict:
                 output[field] = literal_eval(form_widgets[field])
+            elif field_type == int:
+                output[field] = int(form_widgets[field])
+            elif field_type == float:
+                output[field] = float(form_widgets[field])
             else:
                 output[field] = form_widgets[field]
         print(json.dumps(output, indent=4))
@@ -142,6 +147,8 @@ class Annotator:
                 self.form_widgets[field].value = list_to_string(current_problem[field]) if field in current_problem else ""
             elif field_type==dict:
                 self.form_widgets[field].value = str(current_problem[field]) if field in current_problem else '{}'
+            elif field_type == int or field_type == float:
+                self.form_widgets[field].value = str(current_problem[field]) if field in current_problem else ""
             else:
                 self.form_widgets[field].value = current_problem[field] if field in current_problem else ""
  
@@ -168,6 +175,10 @@ class Annotator:
                 current_problem[field] = string_to_list(self.form_widgets[field].value)
             elif field_type == dict:
                 current_problem[field] = literal_eval(self.form_widgets[field].value)
+            elif field_type == int:
+                current_problem[field] = int(self.form_widgets[field].value)
+            elif field_type == float:
+                current_problem[field] = float(self.form_widgets[field].value)
             else:
                 current_problem[field] = self.form_widgets[field].value
         
