@@ -1,12 +1,13 @@
 Metadata-Version: 2.1
 Name: jupyter-annotator
-Version: 1.0.2
+Version: 1.1.1
 Summary: This package provides an annotation UI for arbitrary dataset in json format.
 Home-page: https://github.com/DoubleBite/jupyter-annotator
 Author: Shih-hong Tsai
 Author-email: doublebeet@gmail.com
 License: UNKNOWN
 Description: # jupyter json annotator
+        
         
         This package provides an annotation UI for arbitrary dataset in json format.
         
@@ -19,8 +20,8 @@ Description: # jupyter json annotator
         
         ## Usage
         ```python
+        # Normal usage
         from jupyter_annotator import Annotator
-        
         problems = [{
             "problem": "Where would I not want a fox? (a problem from coommonsenseQA)",
             "options": {
@@ -32,11 +33,11 @@ Description: # jupyter json annotator
         annotator = Annotator(problems)
         annotator.start()
         ```
-        ![](https://i.imgur.com/XyTxx9f.png)
         
         
         ```python
-        # Adding custom fields
+        # Add custom fields
+        from jupyter_annotator import Annotator
         problems = [{
             "problem": "What is the perimeter of a rectangular field whose diagonal is 5 m and width is 3 m ?",
             "options": {
@@ -49,8 +50,32 @@ Description: # jupyter json annotator
         annotator = Annotator(problems, custom_fields=custom_fields)
         annotator.start()
         ```
+        
+        ```python
+        # Skip fields
+        from jupyter_annotator import Annotator
+        problems = [{
+            "id": 1,
+            "problem": "Where would I not want a fox? (a problem from coommonsenseQA)",
+            "options": {
+                "a": "hen house", "b": "england", "c": "mountains", "d": "english hunt", "e": "california"
+            },
+            "answer": "a"
+        }]
+        
+        filtered_fields = ['id'] 
+        annotator = Annotator(problems, filtered_fields=filtered_fields)
+        annotator.start()
+        ```
+        
+        + Normal Usage
+        ![](https://i.imgur.com/XyTxx9f.png)
+        
+        + Add custom fields
         ![](https://i.imgur.com/ZGulPVj.png)
         
+        + Skip fields
+        ![](https://i.imgur.com/6zT5lMR.png)
         
         
         
