@@ -17,51 +17,77 @@ from .utility import string_to_list, list_to_string, most_common
 class Annotator:
     """
     """
-    def __init__(self, json_problems, custom_fields=None, skip_fields=None):
+    def __init__(self, problems, custom_fields=None, skip_fields=None, filter_fields=None):
         
-        self.problems = json_problems
-        self.current_index = 0
-        self.fields = []
-        self.field_to_length = {}
-        self.field_to_type = {}
-        self.skip_fields = skip_fields if skip_fields else []
-        
-        # Preprocess
-        self._get_field_names()
-        self._get_field_info()
-        if custom_fields:
-            self._handle_custom_fields(custom_fields)    
-    
-    
-    def _get_field_names(self):
-        """Read the field names from the input problems 
-        
-        Example (one problem): 
-            problem = {'a': 123, 'b':345, 'c':789} --> field_names = ['a', 'b', 'c]'
-        """
-        for problem in self.problems:
-            fields = problem.keys()
-            new_fields = [field for field in fields if field not in self.fields+self.skip_fields]
-            self.fields = self.fields + new_fields
-    
-    
-    def _get_field_info(self):
-        """Collect the max length of the text of each field for layout preparation, and collect the type of each field
-        """
-        for field in self.fields:
-            self.field_to_length[field] = max([len(str(prob[field])) for prob in self.problems if field in prob])
-            self.field_to_type[field] = most_common([type(prob[field]) for prob in self.problems if field in prob])
-    
-    
-    def _handle_custom_fields(self, custom_fields):
-        """If there exist custom fields, collect their  information
-        """
-        for field, field_type, field_length in custom_fields:
-            if field not in self.fields:
-                self.fields.append(field)
-                self.field_to_type[field] = field_type
-                self.field_to_length[field] = field_length
 
+        
+        self.all_fields, self.field_to_type, self.field_to_length= self._handle_field_info(problems, custom_fields, filter_fields) 
+        self.active_fields = [f for f in self.all_fields if f not in skip_fields] if skip_fields else self.all_fields
+        self.problems = self._copy_problem_info(problems)
+        self.current_index = 0
+        
+#         # Preprocess
+#         self._get_field_names()
+#         self._get_field_info()
+#         if custom_fields:
+#             self._handle_custom_fields(custom_fields)    
+    
+    
+    def _handle_field_info(self, problems, custom_fields, filter_fields):
+        """
+        Read field information from the problems, filter the unwanted ones, and add custom ones
+        Field information includes max length of the text of each field (for layout preparation) and the type of each field
+        """
+
+        all_fields_without_filter = []
+        field_to_type = {}
+        field_to_length = {}
+        
+        # Normalize these two
+        custom_fields = custom_fields if custom_fields else []
+        filter_fields = filter_fields if filter_fields else []
+        
+        # Get field names
+        # To preserve order of the fields, we don't use set here
+        for problem in problems:
+            prob_fields = problem.keys()
+            new_fields = [field for field in prob_fields if field not in filter_fields+all_fields_without_filter]
+            all_fields_without_filter = all_fields_without_filter + new_fields
+  
+        # Get their types and lengths
+        for field in all_fields_without_filter:
+            field_to_type[field] = most_common([type(prob[field]) for prob in problems if field in prob])
+            field_to_length[field] = max([len(str(prob[field])) for prob in problems if field in prob])
+    
+        # Handle custom fields
+        for field, field_type, field_length in custom_fields:
+            if field not in all_fields_without_filter:
+                all_fields_without_filter.append(field)
+                field_to_type[field] = field_type
+                field_to_length[field] = field_length
+    
+        return all_fields_without_filter, field_to_type, field_to_length
+
+    
+    def _copy_problem_info(self, problems):
+        """
+        Copy the problem information from input problems according to the collected field information
+        """
+        new_problems = []
+        
+        for prob in problems:
+            new_prob = OrderedDict()
+            
+            for field in self.all_fields:
+                field_type = self.field_to_type[field]
+                if field in prob:
+                    new_prob[field] = prob[field]
+                else:
+                    new_prob[field] = field_type()
+            
+            new_problems.append(new_prob)
+        return new_problems
+    
         
     def start(self):
         """Initialize the annotation environment and load the values from the current problem (the first problem)
@@ -81,7 +107,7 @@ class Annotator:
         layout_sm = widgets.Layout(flex='0 1 20px', width='90%')        
         
         self.form_widgets = OrderedDict()
-        for field in self.fields:
+        for field in self.active_fields:
             if self.field_to_length[field] <= 20:
                 layout = layout_sm
                 height += 20
@@ -92,7 +118,7 @@ class Annotator:
                 layout = layout_lg
                 height += 150
             self.form_widgets[field] = widgets.Textarea(description=f'{field.capitalize()}: ', layout=layout)
-        
+
         # Buttons
         # The idea of these buttons takes reference from https://github.com/ideonate/jupyter-innotater
         prevbtn = widgets.Button(description='< Previous')
@@ -101,28 +127,27 @@ class Annotator:
         restorebtn = widgets.Button(description='Restore')
         prevbtn.on_click(lambda _: self.change_index(-1))
         nextbtn.on_click(lambda _: self.change_index(1))
-        savebtn.on_click(self.save)
-        restorebtn.on_click(self.restore)
+        savebtn.on_click(self._save)
+        restorebtn.on_click(self._restore)
         buttons_layout = widgets.Layout(width='80%', height='35px')
-        height += 35
+        height += 50
         buttons = widgets.HBox([prevbtn, nextbtn, savebtn, restorebtn], layout=buttons_layout)
         
         # Dashboard
         form_layout = widgets.Layout(width='47%', justify_content ='space-around',  align_items='flex-end')
         preview_layout = widgets.Layout(width='43%')
-        dashboard_layout = widgets.Layout(height=f'{height+16*len(self.fields)}px')
+        dashboard_layout = widgets.Layout(height=f'{height+15*len(self.active_fields)}px')
         form = widgets.VBox([*self.form_widgets.values(), buttons], layout=form_layout)
         form_output = widgets.interactive_output(self.display_func, self.form_widgets)
         preview = widgets.VBox([form_output], layout=preview_layout)
         dashboard = widgets.HBox([preview, form], layout=dashboard_layout)
         display(dashboard)
-
         
     def display_func(self, **form_widgets):
         """The display function for interactive_output widget
         """
         output = {}
-        for field in self.fields:
+        for field in self.active_fields:
             field_type = self.field_to_type[field]
             if field_type == list:
                 output[field] = string_to_list(form_widgets[field])
@@ -141,7 +166,7 @@ class Annotator:
         """Load the field values of the current problem
         """
         current_problem = self.problems[self.current_index]
-        for field in self.fields:
+        for field in self.active_fields:
             field_type = self.field_to_type[field]
             if field_type==list:
                 self.form_widgets[field].value = list_to_string(current_problem[field]) if field in current_problem else ""
@@ -165,11 +190,11 @@ class Annotator:
         self.load_problem_info()
             
             
-    def save(self, change):
+    def _save(self, change):
         """Save the annotations back to the problem
         """
         current_problem = self.problems[self.current_index]
-        for field in self.fields:
+        for field in self.active_fields:
             field_type = self.field_to_type[field]
             if field_type == list:
                 current_problem[field] = string_to_list(self.form_widgets[field].value)
@@ -183,8 +208,12 @@ class Annotator:
                 current_problem[field] = self.form_widgets[field].value
         
         
-    def restore(self, change):
+    def _restore(self, change):
         """Restore 
         """
         # Reload the problem info
         self.load_problem_info()
+        
+       
+    def dumps(self):
+        pass
