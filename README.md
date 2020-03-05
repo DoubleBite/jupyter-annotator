@@ -11,63 +11,57 @@ pip install jupyter-annotator
 
 
 ## Usage
+
+### 1. Normal usage
+
 ```python
-# Normal usage
 from jupyter_annotator import Annotator
+
 problems = [{
+    "id": 2,
     "problem": "Where would I not want a fox? (a problem from coommonsenseQA)",
     "options": {
         "a": "hen house", "b": "england", "c": "mountains", "d": "english hunt", "e": "california"
     },
-    "answer": "a"
+    "answer": "a",
+    "filtered": "xxxxxxxxxx"
 }]
 
-annotator = Annotator(problems)
-annotator.start()
+anno = Annotator(problems)
+anno.start()
 ```
 
+![](https://i.imgur.com/xxT1hEN.png)
+
+
+
+
+### 2. Custom fields + skip + filter
++ **Custom fields**: add custom field in the format (field_name, type, max_length)
++ **Skip fields**: the fields which will not appear in the form but still in the preview so that they won't be edited. 
++ **Filter fields**: the fields that won't appear either in the form or in the preview 
 
 ```python
-# Add custom fields
-from jupyter_annotator import Annotator
 problems = [{
-    "problem": "What is the perimeter of a rectangular field whose diagonal is 5 m and width is 3 m ?",
-    "options": {
-        "a":"20 m", "b":"15 m", "c":"14 m", "d":"10 m", "e":"25 m"
-    },
-    "answer": "c"
-}]
-
-custom_fields = [("rationale", str, 100)] # (field_name, type, max_length)
-annotator = Annotator(problems, custom_fields=custom_fields)
-annotator.start()
-```
-
-```python
-# Skip fields
-from jupyter_annotator import Annotator
-problems = [{
-    "id": 1,
+    "id": 2,
     "problem": "Where would I not want a fox? (a problem from coommonsenseQA)",
     "options": {
         "a": "hen house", "b": "england", "c": "mountains", "d": "english hunt", "e": "california"
     },
-    "answer": "a"
+    "answer": "a",
+    "filtered": "xxxxxxxxxx"
 }]
 
-filtered_fields = ['id'] 
-annotator = Annotator(problems, filtered_fields=filtered_fields)
+custom_fields = [("rationale", str, 100)] 
+skip_fields = ['id'] 
+filter_fields = ["xxx"]
+
+annotator = Annotator(problems, custom_fields=custom_fields, skip_fields=skip_fields, filter_fields=filter_fields)
 annotator.start()
 ```
+![](https://i.imgur.com/iRF90ja.png)
 
-+ Normal Usage
-![](https://i.imgur.com/XyTxx9f.png)
 
-+ Add custom fields
-![](https://i.imgur.com/ZGulPVj.png)
-
-+ Skip fields
-![](https://i.imgur.com/6zT5lMR.png)
 
 
 
