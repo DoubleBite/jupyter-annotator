@@ -20,6 +20,7 @@ class Annotator:
     self.fields_no_filter: active + skip
     self.active_fields:     active
     """
+    
     def __init__(self, problems, custom_fields=None, skip_fields=None, filter_fields=None):
         
         # Normalize these three
@@ -33,7 +34,7 @@ class Annotator:
         self.problems = self._copy_problem_info(problems)
         self.current_index = 0
 
-        
+
     def _handle_field_info(self, problems, custom_fields):
         """
         Read field information from the problems, filter the unwanted ones, and add custom ones
