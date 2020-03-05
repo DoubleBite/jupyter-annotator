@@ -20,7 +20,6 @@ class Annotator:
     self.fields_no_filter: active + skip
     self.active_fields:     active
     """
-    
     def __init__(self, problems, custom_fields=None, skip_fields=None, filter_fields=None):
         
         # Normalize these three
@@ -33,8 +32,9 @@ class Annotator:
         self.active_fields = [f for f in self.fields_no_filter if f not in skip_fields] # active only
         self.problems = self._copy_problem_info(problems)
         self.current_index = 0
-
-
+        
+    
+    
     def _handle_field_info(self, problems, custom_fields):
         """
         Read field information from the problems, filter the unwanted ones, and add custom ones
@@ -44,6 +44,7 @@ class Annotator:
         all_fields = []
         field_to_type = {}
         field_to_length = {}
+        
         
         # Get field names
         # To preserve order of the fields, we don't use set here
@@ -72,7 +73,7 @@ class Annotator:
         Copy the problem information from input problems according to the collected field information
         """
         new_problems = []
-       
+        
         for prob in problems:
             new_prob = OrderedDict()
             
@@ -86,7 +87,7 @@ class Annotator:
             new_problems.append(new_prob)
         return new_problems
     
-    
+        
     def start(self):
         """Initialize the annotation environment and load the values from the current problem (the first problem)
         """
@@ -116,7 +117,7 @@ class Annotator:
                 layout = layout_lg
                 height += 150
             self.form_widgets[field] = widgets.Textarea(description=f'{field.capitalize()}: ', layout=layout)
-        
+
         # Buttons
         # The idea of these buttons takes reference from https://github.com/ideonate/jupyter-innotater
         prevbtn = widgets.Button(description='< Previous')
@@ -125,28 +126,26 @@ class Annotator:
         restorebtn = widgets.Button(description='Restore')
         prevbtn.on_click(lambda _: self.change_index(-1))
         nextbtn.on_click(lambda _: self.change_index(1))
-        savebtn.on_click(self.save)
-        restorebtn.on_click(self.restore)
+        savebtn.on_click(self._save)
+        restorebtn.on_click(self._restore)
         buttons_layout = widgets.Layout(width='80%', height='35px')
-        height += 35
+        height += 50
         buttons = widgets.HBox([prevbtn, nextbtn, savebtn, restorebtn], layout=buttons_layout)
         
         # Dashboard
         form_layout = widgets.Layout(width='47%', justify_content ='space-around',  align_items='flex-end')
         preview_layout = widgets.Layout(width='43%')
-        dashboard_layout = widgets.Layout(height=f'{height+16*len(self.fields)}px')
+        dashboard_layout = widgets.Layout(height=f'{height+15*len(self.active_fields)}px')
         form = widgets.VBox([*self.form_widgets.values(), buttons], layout=form_layout)
         form_output = widgets.interactive_output(self.display_func, self.form_widgets)
         preview = widgets.VBox([form_output], layout=preview_layout)
         dashboard = widgets.HBox([preview, form], layout=dashboard_layout)
         display(dashboard)
-
         
     def display_func(self, **form_widgets):
         """The display function for interactive_output widget
         """
         output = {}
-
         for field in self.fields_no_filter:
             field_type = self.field_to_type[field]
             if field in self.active_fields:
@@ -169,7 +168,7 @@ class Annotator:
         """Load the field values of the current problem
         """
         current_problem = self.problems[self.current_index]
-        for field in self.fields:
+        for field in self.active_fields:
             field_type = self.field_to_type[field]
             if field_type==list:
                 self.form_widgets[field].value = list_to_string(current_problem[field])
@@ -193,11 +192,11 @@ class Annotator:
         self.load_problem_info()
             
             
-    def save(self, change):
+    def _save(self, change):
         """Save the annotations back to the problem
         """
         current_problem = self.problems[self.current_index]
-        for field in self.fields:
+        for field in self.active_fields:
             field_type = self.field_to_type[field]
             if field_type == list:
                 current_problem[field] = string_to_list(self.form_widgets[field].value)
@@ -211,8 +210,12 @@ class Annotator:
                 current_problem[field] = self.form_widgets[field].value
         
         
-    def restore(self, change):
+    def _restore(self, change):
         """Restore 
         """
         # Reload the problem info
         self.load_problem_info()
+        
+       
+    def dumps(self):
+        pass
