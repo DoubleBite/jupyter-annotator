@@ -16,53 +16,76 @@ from .utility import string_to_list, list_to_string, most_common
 
 class Annotator:
     """
+    self.all_fields:           active + skip + filter
+    self.fields_no_filter: active + skip
+    self.active_fields:     active
     """
-    def __init__(self, json_problems, custom_fields=None, skip_fields=None):
+    def __init__(self, problems, custom_fields=None, skip_fields=None, filter_fields=None):
         
-        self.problems = json_problems
+        # Normalize these three
+        custom_fields = custom_fields if custom_fields else []
+        skip_fields = skip_fields if skip_fields else []
+        filter_fields = filter_fields if filter_fields else []
+        
+        self.all_fields, self.field_to_type, self.field_to_length= self._handle_field_info(problems, custom_fields) 
+        self.fields_no_filter = [f for f in self.all_fields if f not in filter_fields] # active+skip fields
+        self.active_fields = [f for f in self.fields_no_filter if f not in skip_fields] # active only
+        self.problems = self._copy_problem_info(problems)
         self.current_index = 0
-        self.fields = []
-        self.field_to_length = {}
-        self.field_to_type = {}
-        self.skip_fields = skip_fields if skip_fields else []
-        
-        # Preprocess
-        self._get_field_names()
-        self._get_field_info()
-        if custom_fields:
-            self._handle_custom_fields(custom_fields)    
-    
-    
-    def _get_field_names(self):
-        """Read the field names from the input problems 
-        
-        Example (one problem): 
-            problem = {'a': 123, 'b':345, 'c':789} --> field_names = ['a', 'b', 'c]'
-        """
-        for problem in self.problems:
-            fields = problem.keys()
-            new_fields = [field for field in fields if field not in self.fields+self.skip_fields]
-            self.fields = self.fields + new_fields
-    
-    
-    def _get_field_info(self):
-        """Collect the max length of the text of each field for layout preparation, and collect the type of each field
-        """
-        for field in self.fields:
-            self.field_to_length[field] = max([len(str(prob[field])) for prob in self.problems if field in prob])
-            self.field_to_type[field] = most_common([type(prob[field]) for prob in self.problems if field in prob])
-    
-    
-    def _handle_custom_fields(self, custom_fields):
-        """If there exist custom fields, collect their  information
-        """
-        for field, field_type, field_length in custom_fields:
-            if field not in self.fields:
-                self.fields.append(field)
-                self.field_to_type[field] = field_type
-                self.field_to_length[field] = field_length
 
         
+    def _handle_field_info(self, problems, custom_fields):
+        """
+        Read field information from the problems, filter the unwanted ones, and add custom ones
+        Field information includes max length of the text of each field (for layout preparation) and the type of each field
+        """
+
+        all_fields = []
+        field_to_type = {}
+        field_to_length = {}
+        
+        # Get field names
+        # To preserve order of the fields, we don't use set here
+        for problem in problems:
+            prob_fields = problem.keys()
+            new_fields = [field for field in prob_fields if field not in all_fields]
+            all_fields = all_fields + new_fields
+  
+        # Get their types and lengths
+        for field in all_fields:
+            field_to_type[field] = most_common([type(prob[field]) for prob in problems if field in prob])
+            field_to_length[field] = max([len(str(prob[field])) for prob in problems if field in prob])
+    
+        # Handle custom fields
+        for field, field_type, field_length in custom_fields:
+            if field not in all_fields:
+                all_fields.append(field)
+                field_to_type[field] = field_type
+                field_to_length[field] = field_length
+    
+        return all_fields, field_to_type, field_to_length
+
+    
+    def _copy_problem_info(self, problems):
+        """
+        Copy the problem information from input problems according to the collected field information
+        """
+        new_problems = []
+       
+        for prob in problems:
+            new_prob = OrderedDict()
+            
+            for field in self.all_fields:
+                field_type = self.field_to_type[field]
+                if field in prob:
+                    new_prob[field] = prob[field]
+                else:
+                    new_prob[field] = field_type()
+            
+            new_problems.append(new_prob)
+        return new_problems
+    
+    
     def start(self):
         """Initialize the annotation environment and load the values from the current problem (the first problem)
         """
@@ -81,7 +104,7 @@ class Annotator:
         layout_sm = widgets.Layout(flex='0 1 20px', width='90%')        
         
         self.form_widgets = OrderedDict()
-        for field in self.fields:
+        for field in self.active_fields:
             if self.field_to_length[field] <= 20:
                 layout = layout_sm
                 height += 20
@@ -122,18 +145,22 @@ class Annotator:
         """The display function for interactive_output widget
         """
         output = {}
-        for field in self.fields:
+
+        for field in self.fields_no_filter:
             field_type = self.field_to_type[field]
-            if field_type == list:
-                output[field] = string_to_list(form_widgets[field])
-            elif field_type == dict:
-                output[field] = literal_eval(form_widgets[field])
-            elif field_type == int:
-                output[field] = int(form_widgets[field])
-            elif field_type == float:
-                output[field] = float(form_widgets[field])
+            if field in self.active_fields:
+                if field_type == list:
+                    output[field] = string_to_list(form_widgets[field])
+                elif field_type == dict:
+                    output[field] = literal_eval(form_widgets[field])
+                elif field_type == int:
+                    output[field] = int(form_widgets[field])
+                elif field_type == float:
+                    output[field] = float(form_widgets[field])
+                else:
+                    output[field] = form_widgets[field]
             else:
-                output[field] = form_widgets[field]
+                    output[field] = self.problems[self.current_index][field]
         print(json.dumps(output, indent=4))
 
         
@@ -144,13 +171,13 @@ class Annotator:
         for field in self.fields:
             field_type = self.field_to_type[field]
             if field_type==list:
-                self.form_widgets[field].value = list_to_string(current_problem[field]) if field in current_problem else ""
+                self.form_widgets[field].value = list_to_string(current_problem[field])
             elif field_type==dict:
-                self.form_widgets[field].value = str(current_problem[field]) if field in current_problem else '{}'
+                self.form_widgets[field].value = str(current_problem[field])
             elif field_type == int or field_type == float:
-                self.form_widgets[field].value = str(current_problem[field]) if field in current_problem else ""
+                self.form_widgets[field].value = str(current_problem[field])
             else:
-                self.form_widgets[field].value = current_problem[field] if field in current_problem else ""
+                self.form_widgets[field].value = current_problem[field]
  
  
     def change_index(self, change):
